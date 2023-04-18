@@ -21,16 +21,15 @@ void MacReceiver(void *argument)
 			case FROM_PHY:
 				data=queueMsgR.anyPtr;
 			//check if is a token
-				if(data.isToken==1)
+				if(data->isToken==TOKEN_TAG)
 				{
 					queueMsgS.type = TOKEN;
 					queueMsgS.anyPtr =queueMsgR.anyPtr;
-					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}
 				break;
 			default :
-
 				break;
 		}
 	}

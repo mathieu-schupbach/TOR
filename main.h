@@ -121,81 +121,34 @@ struct queueMsg_t
 //--------------------------------------------------------------------------------
 // Structure of data MAC
 //--------------------------------------------------------------------------------
-typedef struct stationAdd
-{
-	bool_t b3;
-	bool_t b2;
-	bool_t b1;
-	bool_t b0;
-}stationAdd;
-typedef struct sapiAdd
-{
-	bool_t b2;
-	bool_t b1;
-	bool_t b0;
-}sapiAdd;
-
-typedef union userStat
-{
-	bool_t b7;
-	bool_t b6;
-	bool_t b5;
-	bool_t b4;
-	bool_t b3;
-	bool_t b2;
-	bool_t b1;
-	bool_t b0;
-	uint8_t userByte;
-}userStat;
 
 typedef struct tokenStruct
 {
 	uint8_t addressToken;			///<0xFF
-	userStat user[16];				///<State of user
+	uint8_t user[15];				///<State of user
 }tokenStruct;
 
 typedef struct control
 {
-	bool_t isNul1;
-	stationAdd stationSource;
-	sapiAdd sapiSource;
-	bool_t isNul2;
-	stationAdd stationDest;
-	sapiAdd sapiDest;
+	uint8_t source;
+	uint8_t	destination;
 }control;
-
-typedef struct checksum
-{
-	bool_t b7;
-	bool_t b6;
-	bool_t b5;
-	bool_t b4;
-	bool_t b3;
-	bool_t b2;
-}checksum;
-
-typedef struct statusFram
-{
-	checksum cs;
-	bool_t read;
-	bool_t ack;
-}statusFram;
 typedef union dataFram
 {
 	uint8_t data[MAX_BLOCK_SIZE-3];
-	statusFram Status;
+	uint8_t Status;
 }dataFram;
 
 typedef struct framStruct
 {
 	control contolFram;
 	uint8_t lenght;
-	dataFram;
+	uint8_t Status;
 }framStruct;
 
 union dataStruct
 {
-	bool_t isToken;					///< 0:Fram ;1:Token
+	uint8_t isToken;					///< 0xFF:Token auter : Fram
 	tokenStruct token;			///< data of token
 	framStruct fram;				///< data of fram
 };
