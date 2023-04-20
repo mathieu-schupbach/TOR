@@ -18,7 +18,7 @@ void MacSender(void *argument)
 	struct queueMsg_t queueMsgR;					// queue message recive
 	struct queueMsg_t queueMsgS;					// queue message send
 	struct queueMsg_t queueMsgT;					// queue message token
-	union dataStruct *dataStrct;								//data
+	dataStruct *dataStrct;								//data
 	struct dataFram	 *data     ;
 	//initalisation
 	gTokenInterface.myAddress=8;
@@ -49,7 +49,7 @@ void MacSender(void *argument)
 				break;
 			case TOKEN:
 			//chose data
-			queueMsgT.anyPtr=queueMsgT.anyPtr;
+			queueMsgT.anyPtr=queueMsgR.anyPtr;
 			dataStrct=queueMsgT.anyPtr;
 			//Check if update token list
 			bool update =false;
@@ -88,8 +88,10 @@ void MacSender(void *argument)
 				else
 				{//return token
 					//send to phy
-					queueMsgT.type = TO_PHY;
-					osMessageQueuePut(queue_phyS_id,&queueMsgT,osPriorityNormal,osWaitForever);
+					queueMsgS.type = TO_PHY;
+					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+					 *((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgT.anyPtr);
+					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 				}
 				osMemoryPoolFree(memPool,queueMsgT.anyPtr);
 				break;

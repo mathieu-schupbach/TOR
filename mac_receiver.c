@@ -10,7 +10,8 @@ void MacReceiver(void *argument)
 	//Declacration
 	struct queueMsg_t queueMsgR;					// queue message recive
 	struct queueMsg_t queueMsgS;					// queue message send
-	union dataStruct *data;								//data
+	dataStruct *dataR;							//data revie
+	dataStruct *dataS;							//data send
 	for (;;)															// loop until doomsday
 	{
 		//Recive a message 
@@ -19,12 +20,13 @@ void MacReceiver(void *argument)
 		switch(queueMsgR.type)
 		{
 			case FROM_PHY:
-				data=queueMsgR.anyPtr;
+			dataR=queueMsgR.anyPtr;
 			//check if is a token
-				if(data->isToken==TOKEN_TAG)
+				if(dataR->token.addressToken==TOKEN_TAG)
 				{
 					queueMsgS.type = TOKEN;
-					queueMsgS.anyPtr =queueMsgR.anyPtr;
+					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+					 *((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
 					osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}

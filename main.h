@@ -145,9 +145,8 @@ typedef struct framStruct
 	dataFram dataAndStatus;
 }framStruct;
 
-union dataStruct
+typedef struct dataStruct
 {
-	uint8_t isToken;					///< 0xFF:Token auter : Fram
 	tokenStruct token;			///< data of token
 	framStruct fram;				///< data of fram
-};
+}dataStruct;

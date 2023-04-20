@@ -3,7 +3,7 @@
 <title>Static Call Graph - [.\Objects\tokenring_project.axf]</title></head>
 <body><HR>
 <H1>Static Call Graph for image .\Objects\tokenring_project.axf</H1><HR>
-<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Thu Apr 20 11:14:05 2023
+<BR><P>#&#060CALLGRAPH&#062# ARM Linker, 5060960: Last Updated: Thu Apr 20 12:24:51 2023
 <BR><P>
 <H3>Maximum Stack Usage =        576 bytes + Unknown(Functions without stacksize, Cycles, Untraceable Function Pointers)</H3><H3>
 Call chain for Maximum Stack Depth:</H3>
@@ -1191,6 +1191,8 @@ Global Symbols
 <LI><a href="#[337]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;isrRtxMessageQueuePut
 <LI><a href="#[336]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;isrRtxMessageQueueGet
 <LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PhReceiver
+<LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacSender
+<LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacReceiver
 <LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DebugStation
 <LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ChatSender
 <LI><a href="#[f2]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ROMRead
@@ -2741,7 +2743,7 @@ Global Symbols
 <LI><a href="#[247]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;I2C_Uninitialize
 </UL>
 
-<P><STRONG><a name="[21c]"></a>HAL_GPIO_EXTI_Callback</STRONG> (Thumb, 48 bytes, Stack size 24 bytes, chat_sender.o(i.HAL_GPIO_EXTI_Callback))
+<P><STRONG><a name="[21c]"></a>HAL_GPIO_EXTI_Callback</STRONG> (Thumb, 54 bytes, Stack size 24 bytes, chat_sender.o(i.HAL_GPIO_EXTI_Callback))
 <BR><BR>[Stack]<UL><LI>Max Depth = 216 + Unknown Stack Size
 <LI>Call Chain = HAL_GPIO_EXTI_Callback &rArr; CheckRetCode &rArr; __2printf &rArr; _printf_char_file &rArr; _mutex_release &rArr; os_kernel_is_active &rArr; osKernelGetState &rArr; svcRtxKernelGetState &rArr; EvrRtxKernelGetState &rArr; EventRecord2 &rArr; EventRecordItem
 </UL>
@@ -3069,16 +3071,18 @@ Global Symbols
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> main.o(i.main)
 </UL>
-<P><STRONG><a name="[94]"></a>MacReceiver</STRONG> (Thumb, 78 bytes, Stack size 24 bytes, mac_receiver.o(i.MacReceiver))
+<P><STRONG><a name="[94]"></a>MacReceiver</STRONG> (Thumb, 96 bytes, Stack size 24 bytes, mac_receiver.o(i.MacReceiver))
 <BR><BR>[Stack]<UL><LI>Max Depth = 208<LI>Call Chain = MacReceiver &rArr; osMessageQueuePut &rArr; isrRtxMessageQueuePut &rArr; osRtxPostProcess &rArr; osRtxKernelErrorNotify &rArr; EvrRtxKernelErrorNotify &rArr; EventRecord2 &rArr; EventRecordItem
 </UL>
-<BR>[Calls]<UL><LI><a href="#[18c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMessageQueuePut
+<BR>[Calls]<UL><LI><a href="#[18e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMemoryPoolAlloc
+<LI><a href="#[18c]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMessageQueuePut
 <LI><a href="#[18a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMessageQueueGet
 <LI><a href="#[196]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMemoryPoolFree
+<LI><a href="#[190]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> main.o(i.main)
 </UL>
-<P><STRONG><a name="[95]"></a>MacSender</STRONG> (Thumb, 424 bytes, Stack size 64 bytes, mac_sender.o(i.MacSender))
+<P><STRONG><a name="[95]"></a>MacSender</STRONG> (Thumb, 446 bytes, Stack size 64 bytes, mac_sender.o(i.MacSender))
 <BR><BR>[Stack]<UL><LI>Max Depth = 248<LI>Call Chain = MacSender &rArr; osMessageQueuePut &rArr; isrRtxMessageQueuePut &rArr; osRtxPostProcess &rArr; osRtxKernelErrorNotify &rArr; EvrRtxKernelErrorNotify &rArr; EventRecord2 &rArr; EventRecordItem
 </UL>
 <BR>[Calls]<UL><LI><a href="#[18e]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMemoryPoolAlloc
@@ -3087,6 +3091,7 @@ Global Symbols
 <LI><a href="#[196]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMemoryPoolFree
 <LI><a href="#[262]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;osMessageQueueNew
 <LI><a href="#[14a]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy4
+<LI><a href="#[190]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;__aeabi_memcpy
 </UL>
 <BR>[Address Reference Count : 1]<UL><LI> main.o(i.main)
 </UL>
@@ -5048,6 +5053,7 @@ Global Symbols
 <BR>[Called By]<UL><LI><a href="#[97]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;TimeSender
 <LI><a href="#[92]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;PhReceiver
 <LI><a href="#[95]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacSender
+<LI><a href="#[94]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;MacReceiver
 <LI><a href="#[91]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;DebugStation
 <LI><a href="#[99]">&gt;&gt;</a>&nbsp;&nbsp;&nbsp;ChatSender
 </UL>
