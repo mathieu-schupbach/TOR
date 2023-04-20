@@ -133,17 +133,16 @@ typedef struct control
 	uint8_t source;
 	uint8_t	destination;
 }control;
-typedef union dataFram
+typedef struct dataFram
 {
-	uint8_t data[MAX_BLOCK_SIZE-3];
-	uint8_t Status;
+	char data[MAX_BLOCK_SIZE-3];
 }dataFram;
 
 typedef struct framStruct
 {
 	control contolFram;
 	uint8_t lenght;
-	uint8_t Status;
+	dataFram dataAndStatus;
 }framStruct;
 
 union dataStruct

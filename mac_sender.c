@@ -18,7 +18,12 @@ void MacSender(void *argument)
 	struct queueMsg_t queueMsgR;					// queue message recive
 	struct queueMsg_t queueMsgS;					// queue message send
 	struct queueMsg_t queueMsgT;					// queue message token
-	union dataStruct *data;								//data
+	union dataStruct *dataStrct;								//data
+	struct dataFram	 *data     ;
+	//initalisation
+	gTokenInterface.myAddress=8;
+	queueMsgS.type=TOKEN_LIST;
+	osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 	for (;;)														  // loop until doomsday
 	{
 		//wait a Message
@@ -27,34 +32,47 @@ void MacSender(void *argument)
 		{
 			case NEW_TOKEN:
 				queueMsgS.type = TO_PHY;
-				data = osMemoryPoolAlloc(memPool,0);
+				dataStrct = osMemoryPoolAlloc(memPool,0);
 				//modift du token
 				//
-				data->token.addressToken=0xFF;
+				dataStrct->token.addressToken=0xFF;
 				
 				for(int i = 0;i<15;i++)
 				{
-					data->token.user[i]=0x00;
+					dataStrct->token.user[i]=0x00;
 				}
-					data->token.user[7]=0x0A;
+				//dit si je suis connect ou pas
+					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
 				//
-				queueMsgS.anyPtr=data;
+				queueMsgS.anyPtr=dataStrct;
 				osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 				break;
 			case TOKEN:
 			//chose data
-			queueMsgR.anyPtr=data;
+			queueMsgT.anyPtr=queueMsgT.anyPtr;
+			dataStrct=queueMsgT.anyPtr;
 			//Check if update token list
 			bool update =false;
 			for(int i = 0;i<15;i++)
 				{
-					if(data->token.user[i]!=gTokenInterface.station_list[i])
+					if(dataStrct->token.user[i]!=gTokenInterface.station_list[i]&&i!=gTokenInterface.myAddress-1)
 					{
 						update=true;
-						gTokenInterface.station_list[i]=data->token.user[i];
+						gTokenInterface.station_list[i]=dataStrct->token.user[i];
 					}
 				}
-				//If update crete the queue
+				//Update the token
+				if(gTokenInterface.connected)
+				{
+					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					gTokenInterface.station_list[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+				}
+				else
+				{
+					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
+					gTokenInterface.station_list[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+				}
+				//If update the liste
 				if(update)
 				{
 					queueMsgS.type=TOKEN_LIST;
@@ -63,14 +81,17 @@ void MacSender(void *argument)
 				//ckeck if as a message to send
 				if(osMessageQueueGet(queue_macInt_id,&queueMsgR,NULL,0)==osOK)
 				{
-					queueMsgS.type = TO_PHY;
-
-					queueMsgS.anyPtr=queueMsgR.anyPtr;
-					data=queueMsgS.anyPtr;
-					//data->fram.contolFram=data->fram.contolFram or 0x03
-					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					//send message to phisique
+					osMessageQueuePut(queue_phyS_id,&queueMsgR,osPriorityNormal,osWaitForever);
 					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}
+				else
+				{//return token
+					//send to phy
+					queueMsgT.type = TO_PHY;
+					osMessageQueuePut(queue_phyS_id,&queueMsgT,osPriorityNormal,osWaitForever);
+				}
+				osMemoryPoolFree(memPool,queueMsgT.anyPtr);
 				break;
 			case DATABACK:
 				break;
@@ -79,8 +100,9 @@ void MacSender(void *argument)
 			case STOP:
 				break;
 			case DATA_IND:
-				queueMsgS.type = TO_PHY;
-				
+				data=queueMsgR.anyPtr;
+				int lenght;
+				//data=*(queueMsgR.anyPtr);
 				break;
 			default :
 				queueMsgS.type = MAC_ERROR;
