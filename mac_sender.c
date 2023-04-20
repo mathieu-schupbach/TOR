@@ -102,9 +102,24 @@ void MacSender(void *argument)
 			case STOP:
 				break;
 			case DATA_IND:
+				//check lenght of data
 				data=queueMsgR.anyPtr;
-				int lenght;
-				//data=*(queueMsgR.anyPtr);
+				uint8_t lenght=0;
+				while(data->data[lenght]!='\0')
+				{
+					lenght++;
+				}
+				//creat the message to save
+				queueMsgS.type = TO_PHY;
+				dataStrct=osMemoryPoolAlloc(memPool,0);
+				//source
+				dataStrct->fram.contolFram.source=(gTokenInterface.myAddress-1)<<3|queueMsgR.sapi;
+				//destinatiom
+				dataStrct->fram.contolFram.destination=queueMsgR.addr<<3|queueMsgR.sapi;
+				//message
+				
+				//satatus
+				
 				break;
 			default :
 				queueMsgS.type = MAC_ERROR;
