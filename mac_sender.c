@@ -19,7 +19,6 @@ void MacSender(void *argument)
 	struct queueMsg_t queueMsgS;					// queue message send
 	struct queueMsg_t queueMsgT;					// queue message token
 	dataStruct *dataStrct;								//data
-	struct dataFram	 *data     ;
 	//initalisation
 	gTokenInterface.myAddress=8;
 	queueMsgS.type=TOKEN_LIST;
@@ -76,13 +75,14 @@ void MacSender(void *argument)
 				if(update)
 				{
 					queueMsgS.type=TOKEN_LIST;
+					queueMsgS.anyPtr=NULL;
 					osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 				}
 				//ckeck if as a message to send
-				if(osMessageQueueGet(queue_macInt_id,&queueMsgR,NULL,0)==osOK)
+				if(osMessageQueueGet(queue_macInt_id,&queueMsgS,NULL,0)==osOK)
 				{
 					//send message to phisique
-					osMessageQueuePut(queue_phyS_id,&queueMsgR,osPriorityNormal,osWaitForever);
+					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}
 				else
@@ -102,35 +102,43 @@ void MacSender(void *argument)
 			case STOP:
 				break;
 			case DATA_IND:
-				//check lenght of data
-				data=queueMsgR.anyPtr;
-				uint8_t lenght=0;
-				while(data->data[lenght]!='\0')
-				{
-					lenght++;
-				}
 				//creat the message to save
 				queueMsgS.type = TO_PHY;
 				dataStrct=osMemoryPoolAlloc(memPool,0);
 				//source
 				dataStrct->fram.contolFram.source=(gTokenInterface.myAddress-1)<<3|queueMsgR.sapi;
-				//destinatiom
+				//destination
 				dataStrct->fram.contolFram.destination=queueMsgR.addr<<3|queueMsgR.sapi;
+				//lenght
+				dataStrct->fram.lenght = strlen(queueMsgR.anyPtr);		
 				//message
-				
+				dataStrct->fram.dataAndStatus=*((dataFram*)queueMsgR.anyPtr);
 				//satatus
-				
+				uint8_t checksum=0;
+				for(int i = 0;i<dataStrct->fram.lenght+3;i++)
+				{
+					checksum+=((uint8_t*)(dataStrct))[i];
+				}
+				dataStrct->fram.dataAndStatus.data[dataStrct->fram.lenght]=checksum<<2;
+				//ckeck brodcat
+				if(queueMsgR.addr==BROADCAST_ADDRESS)
+				{
+					dataStrct->fram.dataAndStatus.data[dataStrct->fram.lenght]|=3;
+				}
+				//send into intern queue
+				queueMsgS.anyPtr=dataStrct;
+				osMessageQueuePut(queue_macInt_id,&queueMsgS,osPriorityNormal,osWaitForever);
+				//delete la memoire du message recu
+				osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				break;
 			default :
 				queueMsgS.type = MAC_ERROR;
-				data = osMemoryPoolAlloc(memPool,0);
+
 				//modift du token
 				//
 						
 			
 				//
-				queueMsgS.anyPtr=data;
-				osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 				break;
 		}
 	}

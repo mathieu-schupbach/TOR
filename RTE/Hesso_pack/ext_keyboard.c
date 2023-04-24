@@ -487,7 +487,7 @@ uint8_t ScanCodeAnalyse(uint8_t scan)
 //------------------------------------------------------------------------------
 void EXTI9_5_IRQHandler(void)
 {
-	// read keyboard data and store it on global variable
+	// read keyboard data and store it on global  variable
 	HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, GPIO_PIN_RESET);	// SPI CS activate
 	HAL_SPI_Receive(&keyboard,&scan,1,100);					// SPI read
 	HAL_GPIO_WritePin(GPIOI, GPIO_PIN_0, GPIO_PIN_SET);		// SPI CS desactivate
