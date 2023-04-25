@@ -38,6 +38,54 @@ void MacReceiver(void *argument)
 					//check if Fiel Source is my
 					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress-1)
 					{
+						//check auto message
+						if(dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress-1||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS)
+						{
+							//check the checksum
+							uint8_t checksum=0;
+							for(int i = 0;i<dataR->fram.lenght+3;i++)
+							{
+								checksum+=((uint8_t*)(dataR))[i];
+							}
+							if((uint8_t)(checksum<<2)==dataR->fram.dataAndStatus.data[dataR->fram.lenght])
+							{
+								//READ and ACK are true
+								dataR=queueMsgR.anyPtr;
+								dataR->fram.dataAndStatus.data[dataR->fram.lenght]|=3;
+								
+								//send indication 
+								queueMsgI.type=DATA_IND;
+								queueMsgI.anyPtr=osMemoryPoolAlloc(memPool,0);
+								dataI=queueMsgI.anyPtr;
+								//soucre addr
+								queueMsgI.addr=dataR->fram.contolFram.source>>3;
+								//source SAPI
+								queueMsgI.addr=dataR->fram.contolFram.source&0x07;
+								//data
+								*((dataFram*)queueMsgI.anyPtr)=dataR->fram.dataAndStatus;
+								dataI->data[dataR->fram.lenght]='\0';
+								//check if a time or a chat
+								switch(dataS->fram.contolFram.source&0x07)
+								{
+									case CHAT_SAPI :
+										osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										break;
+									case TIME_SAPI:
+										osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										break;
+									default:
+										break;
+								}
+								osMemoryPoolFree(memPool,queueMsgR.anyPtr);
+							}
+							else
+							{
+								//READ is true and ACK is false
+								dataR=queueMsgR.anyPtr;
+								dataR->fram.dataAndStatus.data[dataR->fram.lenght]|=2;
+							}
+						}
+						
 						//send your message of mac_sender
 						queueMsgS.type = DATABACK;
 						queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
@@ -76,16 +124,16 @@ void MacReceiver(void *argument)
 								//source SAPI
 								queueMsgI.addr=dataS->fram.contolFram.source&0x07;
 								//data
-								*((dataFram*)queueMsgI.anyPtr)=*((dataFram*)queueMsgS.anyPtr);
+								*((dataFram*)queueMsgI.anyPtr)=dataS->fram.dataAndStatus;
 								dataI->data[dataS->fram.lenght]='\0';
 								//check if a time or a chat
 								switch(dataS->fram.contolFram.source&0x07)
 								{
 									case CHAT_SAPI :
-										osMessageQueuePut(queue_chatR_id,&queueMsgS,osPriorityNormal,osWaitForever);
+										osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
 										break;
 									case TIME_SAPI:
-										osMessageQueuePut(queue_timeR_id,&queueMsgS,osPriorityNormal,osWaitForever);
+										osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,osWaitForever);
 										break;
 									default:
 										break;

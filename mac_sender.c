@@ -18,7 +18,10 @@ void MacSender(void *argument)
 	struct queueMsg_t queueMsgR;					// queue message recive
 	struct queueMsg_t queueMsgS;					// queue message send
 	struct queueMsg_t queueMsgT;					// queue message token
+	struct queueMsg_t queueMsgM;					// queue message Message
 	dataStruct *dataStrct;								//data
+	const uint8_t NbErrorACKMAX=10;				//nombre of resend ack error MAX
+	uint8_t NbErrorACK =0;								//nombre of resend ack error 
 	//initalisation
 	gTokenInterface.myAddress=8;
 	queueMsgS.type=TOKEN_LIST;
@@ -81,9 +84,12 @@ void MacSender(void *argument)
 				//ckeck if as a message to send
 				if(osMessageQueueGet(queue_macInt_id,&queueMsgS,NULL,0)==osOK)
 				{
+					//save the message interne
+					queueMsgM.type = TO_PHY;
+					queueMsgM.anyPtr = osMemoryPoolAlloc(memPool,0);
+					*((dataStruct*)queueMsgM.anyPtr)=*((dataStruct*)queueMsgS.anyPtr);
 					//send message to phisique
 					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
-					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}
 				else
 				{//return token
@@ -92,10 +98,71 @@ void MacSender(void *argument)
 					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 					 *((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgT.anyPtr);
 					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					osMemoryPoolFree(memPool,queueMsgT.anyPtr);
 				}
-				osMemoryPoolFree(memPool,queueMsgT.anyPtr);
 				break;
 			case DATABACK:
+				//check the read bit
+				dataStrct = queueMsgR.anyPtr;
+				int test =(dataStrct->fram.dataAndStatus.data[dataStrct->fram.lenght]&0x02);
+				if(test==2)
+				{
+						//check the ACK
+					if(dataStrct->fram.dataAndStatus.data[dataStrct->fram.lenght]&0x01==1)
+					{
+						//send the token  
+						queueMsgS.type = TO_PHY;
+						queueMsgS.anyPtr=queueMsgT.anyPtr;
+						osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+						//reset error nb
+						NbErrorACK=0;
+						//delet save message
+						osMemoryPoolFree(memPool,queueMsgM.anyPtr);
+					}
+					else
+					{
+						if(NbErrorACK<NbErrorACKMAX)
+						{
+							//incr error nb
+							NbErrorACK++;
+							//resend the message
+							queueMsgS.type = TO_PHY;
+							queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+							*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgM.anyPtr);
+							osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+						}
+						else
+						{
+							//reset error nb
+							NbErrorACK=0;
+							//send a indication erro at the LCD
+							queueMsgS.type = MAC_ERROR;
+							queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+							queueMsgS.addr=dataStrct->fram.contolFram.source>>3;
+							(char*)queueMsgS.anyPtr="test 1";
+							osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
+						}
+					}
+				}
+				else
+				{
+					//send a indication erro at the LCD
+					queueMsgS.type = MAC_ERROR;
+					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+					queueMsgS.addr=(dataStrct->fram.contolFram.source>>3)+1;
+					(char*)queueMsgS.anyPtr="test 2";
+					osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					//send the token delet message
+					queueMsgS.type = TO_PHY;
+					queueMsgS.anyPtr=queueMsgT.anyPtr;
+					osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					//reset error nb
+					NbErrorACK=0;
+					//delet save message
+					osMemoryPoolFree(memPool,queueMsgM.anyPtr);
+				}
+				//Delete the recive
+				osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				break;
 			case START :
 				break;
@@ -132,13 +199,6 @@ void MacSender(void *argument)
 				osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				break;
 			default :
-				queueMsgS.type = MAC_ERROR;
-
-				//modift du token
-				//
-						
-			
-				//
 				break;
 		}
 	}
