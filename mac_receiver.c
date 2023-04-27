@@ -35,8 +35,8 @@ void MacReceiver(void *argument)
 				}
 				else
 				{
-					//check if Fiel Source is my
-					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress)
+					//check if Fiel Source is my and i am connect
+					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress&&gTokenInterface.connected)
 					{
 						//check auto message
 						if(dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS)
@@ -93,7 +93,7 @@ void MacReceiver(void *argument)
 					else
 					{
 						//check if a message for my or all
-						if(dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS)
+						if((dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS))
 						{
 							//controle the checksum
 							uint8_t checksum=0;
@@ -127,7 +127,20 @@ void MacReceiver(void *argument)
 								switch(queueMsgI.sapi)
 								{
 									case CHAT_SAPI :
-										osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										//check i'm connect
+										if(gTokenInterface.connected)
+										{
+											osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										}
+										else
+										{
+											//send the message of phy_send
+											queueMsgS.type = TO_PHY;
+											queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+											*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
+											osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+											osMemoryPoolFree(memPool,queueMsgR.anyPtr);
+										}
 										break;
 									case TIME_SAPI:
 										osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,osWaitForever);

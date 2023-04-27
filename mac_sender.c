@@ -22,6 +22,7 @@ void MacSender(void *argument)
 	dataStruct *dataStrct;								//data
 	const uint8_t NbErrorACKMAX=10;				//nombre of resend ack error MAX
 	uint8_t NbErrorACK =0;								//nombre of resend ack error 
+	bool first = true;
 	//initalisation
 	queueMsgS.type=TOKEN_LIST;
 	osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
@@ -62,16 +63,21 @@ void MacSender(void *argument)
 						gTokenInterface.station_list[i]=dataStrct->token.user[i];
 					}
 				}
-				//Update the token
-				if(gTokenInterface.connected)
+				//Update my token if change
+				if(gTokenInterface.connected!=((dataStrct->token.user[gTokenInterface.myAddress]>>CHAT_SAPI)&0x01)||first)
 				{
-					dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
-					gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
-				}
-				else
-				{
-					dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
-					gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					first = false;
+					update=true;
+					if(gTokenInterface.connected)
+					{
+						dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+						gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					}
+					else
+					{
+						dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
+						gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
+					}
 				}
 				//If update the liste
 				if(update)
@@ -80,8 +86,10 @@ void MacSender(void *argument)
 					queueMsgS.anyPtr=NULL;
 					osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 				}
+				
 				//ckeck if as a message to send
-				if(osMessageQueueGet(queue_macInt_id,&queueMsgS,NULL,0)==osOK)
+					
+				if((osMessageQueueGet(queue_macInt_id,&queueMsgS,NULL,0)==osOK)&&gTokenInterface.connected)
 				{
 					//save the message interne
 					queueMsgM.type = TO_PHY;
@@ -137,9 +145,14 @@ void MacSender(void *argument)
 							//send a indication erro at the LCD
 							queueMsgS.type = MAC_ERROR;
 							queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
-							queueMsgS.addr=dataStrct->fram.contolFram.source>>3;
-							(char*)queueMsgS.anyPtr="test 1";
+							queueMsgS.addr=dataStrct->fram.contolFram.source>>3+1;
+							sprintf((char*)queueMsgS.anyPtr,"Error CRC for : %d \n",(dataStrct->fram.contolFram.destination>>3)+1);
+							//(char*)queueMsgS.anyPtr="Error CRC for : "+strcpy(dataStrct->fram.contolFram.destination>>3);
 							osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
+							//send the token delet message
+							queueMsgS.type = TO_PHY;
+							queueMsgS.anyPtr=queueMsgT.anyPtr;
+							osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
 						}
 					}
 				}
@@ -149,7 +162,8 @@ void MacSender(void *argument)
 					queueMsgS.type = MAC_ERROR;
 					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 					queueMsgS.addr=(dataStrct->fram.contolFram.source>>3)+1;
-					(char*)queueMsgS.anyPtr="test 2";
+					sprintf((char*)queueMsgS.anyPtr,"The Cible %d not found\n",(dataStrct->fram.contolFram.destination>>3)+1);
+					//(char*)queueMsgS.anyPtr="The Cible "+dataStrct->fram.contolFram.destination>>3+"not found";
 					osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 					//send the token delet message
 					queueMsgS.type = TO_PHY;
@@ -164,8 +178,10 @@ void MacSender(void *argument)
 				osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				break;
 			case START :
+				gTokenInterface.connected=true;
 				break;
 			case STOP:
+				gTokenInterface.connected=false;
 				break;
 			case DATA_IND:
 				//creat the message to save
