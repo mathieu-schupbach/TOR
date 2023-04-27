@@ -23,7 +23,6 @@ void MacSender(void *argument)
 	const uint8_t NbErrorACKMAX=10;				//nombre of resend ack error MAX
 	uint8_t NbErrorACK =0;								//nombre of resend ack error 
 	//initalisation
-	gTokenInterface.myAddress=8;
 	queueMsgS.type=TOKEN_LIST;
 	osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,osWaitForever);
 	for (;;)														  // loop until doomsday
@@ -44,7 +43,7 @@ void MacSender(void *argument)
 					dataStrct->token.user[i]=0x00;
 				}
 				//dit si je suis connect ou pas
-					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
 				//
 				queueMsgS.anyPtr=dataStrct;
 				osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
@@ -57,7 +56,7 @@ void MacSender(void *argument)
 			bool update =false;
 			for(int i = 0;i<15;i++)
 				{
-					if(dataStrct->token.user[i]!=gTokenInterface.station_list[i]&&i!=gTokenInterface.myAddress-1)
+					if(dataStrct->token.user[i]!=gTokenInterface.station_list[i]&&i!=gTokenInterface.myAddress)
 					{
 						update=true;
 						gTokenInterface.station_list[i]=dataStrct->token.user[i];
@@ -66,13 +65,13 @@ void MacSender(void *argument)
 				//Update the token
 				if(gTokenInterface.connected)
 				{
-					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
-					gTokenInterface.station_list[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
 				}
 				else
 				{
-					dataStrct->token.user[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
-					gTokenInterface.station_list[gTokenInterface.myAddress-1]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
+					dataStrct->token.user[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (0<<CHAT_SAPI);
+					gTokenInterface.station_list[gTokenInterface.myAddress]=(1 << TIME_SAPI) | (1<<CHAT_SAPI);
 				}
 				//If update the liste
 				if(update)
@@ -173,7 +172,7 @@ void MacSender(void *argument)
 				queueMsgS.type = TO_PHY;
 				dataStrct=osMemoryPoolAlloc(memPool,0);
 				//source
-				dataStrct->fram.contolFram.source=(gTokenInterface.myAddress-1)<<3|queueMsgR.sapi;
+				dataStrct->fram.contolFram.source=(gTokenInterface.myAddress)<<3|queueMsgR.sapi;
 				//destination
 				dataStrct->fram.contolFram.destination=queueMsgR.addr<<3|queueMsgR.sapi;
 				//lenght
