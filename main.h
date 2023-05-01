@@ -16,7 +16,7 @@
 //--------------------------------------------------------------------------------
 // Constants to change the system behaviour
 //--------------------------------------------------------------------------------
-#define DEBUG_MODE				0					// mode is physical line (0) or debug (1)
+#define DEBUG_MODE				1					// mode is physical line (0) or debug (1)
 #define MYADDRESS   			7					// your address choice (table number) for the frame
 #define MAX_BLOCK_SIZE 		100				// size max for a frame
 
@@ -74,7 +74,6 @@ struct TOKENINTERFACE
 	bool_t		debugMsgToSend;				///< did debug have to send a message
 	uint32_t	destinationAddress;		///< current destination address
 	uint8_t		station_list[15];			///< 0 to 15
-	bool_t		seeAll;								///< See all message
 };
 extern struct TOKENINTERFACE gTokenInterface;
 

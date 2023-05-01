@@ -30,13 +30,16 @@ void MacReceiver(void *argument)
 					queueMsgS.type = TOKEN;
 					queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 					 *((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-					osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+					if(osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,0)!=osOK)
+					{
+								osMemoryPoolFree(memPool,queueMsgS.anyPtr);
+					}
 					osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				}
 				else
 				{
-					//check if Fiel Source is my and i am connect
-					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress&&gTokenInterface.connected)
+					//check if Fiel Source is my 
+					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress)
 					{
 						//check auto message
 						if(dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS)
@@ -66,10 +69,16 @@ void MacReceiver(void *argument)
 								switch(queueMsgI.sapi)
 								{
 									case CHAT_SAPI :
-										osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										if(osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,0)!=osOK)
+										{
+											osMemoryPoolFree(memPool,queueMsgI.anyPtr);
+										}
 										break;
 									case TIME_SAPI:
-										osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										if(osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,0)!=osOK)
+										{
+											osMemoryPoolFree(memPool,queueMsgI.anyPtr);
+										}
 										break;
 									default:
 										break;
@@ -87,7 +96,10 @@ void MacReceiver(void *argument)
 						queueMsgS.type = DATABACK;
 						queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 						*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-						osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+						if(osMessageQueuePut(queue_macS_id,&queueMsgS,osPriorityNormal,0)!=osOK)
+						{
+							osMemoryPoolFree(memPool,queueMsgS.anyPtr);
+						}
 						osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 					}
 					else
@@ -108,9 +120,15 @@ void MacReceiver(void *argument)
 								queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 								dataS=queueMsgS.anyPtr;
 								*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-								//READ and ACK are true
+								//READ and ACK are true if i'm conected or SPAI of time
+								if(gTokenInterface.connected || (dataS->fram.contolFram.source&0x07==TIME_SAPI))
+								{
 								dataS->fram.dataAndStatus.data[dataS->fram.lenght]=dataS->fram.dataAndStatus.data[dataS->fram.lenght]|3;
-								osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+								}
+								if(osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,0)!=osOK)
+								{
+									osMemoryPoolFree(memPool,queueMsgS.anyPtr);
+								}
 								
 								//send indication 
 								queueMsgI.type=DATA_IND;
@@ -130,20 +148,17 @@ void MacReceiver(void *argument)
 										//check i'm connect
 										if(gTokenInterface.connected)
 										{
-											osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,osWaitForever);
-										}
-										else
-										{
-											//send the message of phy_send
-											queueMsgS.type = TO_PHY;
-											queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
-											*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-											osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
-											osMemoryPoolFree(memPool,queueMsgR.anyPtr);
+											if(osMessageQueuePut(queue_chatR_id,&queueMsgI,osPriorityNormal,0)!=osOK)
+											{
+												osMemoryPoolFree(memPool,queueMsgI.anyPtr);
+											}
 										}
 										break;
 									case TIME_SAPI:
-										osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,osWaitForever);
+										if(osMessageQueuePut(queue_timeR_id,&queueMsgI,osPriorityNormal,0)!=osOK)
+										{
+											osMemoryPoolFree(memPool,queueMsgI.anyPtr);
+										}
 										break;
 									default:
 										break;
@@ -156,24 +171,30 @@ void MacReceiver(void *argument)
 								queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
 								dataS=queueMsgS.anyPtr;
 								*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-								//READ is true and ACK is false
-								dataS->fram.dataAndStatus.data[dataS->fram.lenght]=dataS->fram.dataAndStatus.data[dataS->fram.lenght]|2;
-								osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
+								
+								//if i'm connect READ is true and ACK is false
+								if(gTokenInterface.connected)
+								{
+									dataS->fram.dataAndStatus.data[dataS->fram.lenght]=dataS->fram.dataAndStatus.data[dataS->fram.lenght]|2;
+								}
+								if(osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,0)!=osOK)
+								{
+									osMemoryPoolFree(memPool,queueMsgS.anyPtr);
+								}
 							}
 							osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 						}
 						else
 						{
-							//check the seeAll not use
-							if(true/*!gTokenInterface.seeAll*/)
+							//send the message of phy_send
+							queueMsgS.type = TO_PHY;
+							queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
+							*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
+							if(osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,0)!=osOK)
 							{
-								//send the message of phy_send
-								queueMsgS.type = TO_PHY;
-								queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);
-								*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
-								osMessageQueuePut(queue_phyS_id,&queueMsgS,osPriorityNormal,osWaitForever);
-								osMemoryPoolFree(memPool,queueMsgR.anyPtr);
+								osMemoryPoolFree(memPool,queueMsgS.anyPtr);
 							}
+							osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 						}
 					}
 				}

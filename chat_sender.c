@@ -35,7 +35,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 			&queueMsg,
 			osPriorityNormal,
 			0);
-		CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
+		//CheckRetCode(retCode,__LINE__,__FILE__,CONTINUE);
 		}			
 	}
 }
