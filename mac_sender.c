@@ -177,6 +177,8 @@ void MacSender(void *argument)
 						{
 							//reset error nb
 							NbErrorACK=0;
+							//Delete the message save
+							osMemoryPoolFree(memPool,queueMsgM.anyPtr);
 							//send a indication erro at the LCD
 							queueMsgS.type = MAC_ERROR;
 							queueMsgS.anyPtr=osMemoryPoolAlloc(memPool,0);

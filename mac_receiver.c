@@ -121,7 +121,7 @@ void MacReceiver(void *argument)
 								dataS=queueMsgS.anyPtr;
 								*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
 								//READ and ACK are true if i'm conected or SPAI of time
-								if(gTokenInterface.connected || (dataS->fram.contolFram.source&0x07==TIME_SAPI))
+								if(gTokenInterface.connected || ((dataS->fram.contolFram.source&0x07)==TIME_SAPI))
 								{
 								dataS->fram.dataAndStatus.data[dataS->fram.lenght]=dataS->fram.dataAndStatus.data[dataS->fram.lenght]|3;
 								}
@@ -172,8 +172,8 @@ void MacReceiver(void *argument)
 								dataS=queueMsgS.anyPtr;
 								*((dataStruct*)queueMsgS.anyPtr)=*((dataStruct*)queueMsgR.anyPtr);
 								
-								//if i'm connect READ is true and ACK is false
-								if(gTokenInterface.connected)
+								//if i'm connect or is a time Sapi : READ is true and ACK is false
+								if(gTokenInterface.connected || ((dataS->fram.contolFram.source&0x07)==TIME_SAPI))
 								{
 									dataS->fram.dataAndStatus.data[dataS->fram.lenght]=dataS->fram.dataAndStatus.data[dataS->fram.lenght]|2;
 								}
