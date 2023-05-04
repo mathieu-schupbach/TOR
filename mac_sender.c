@@ -7,13 +7,15 @@
 
 void MacSender(void *argument)
 {
+	//-------------------------------------------------------------------------------------
 	//Declaration d'une queue intern
-	
+	//-------------------------------------------------------------------------------------
 	const osMessageQueueAttr_t queue_macInt_attr = {
 	.name = "macInt"  	
 	};
 	osMessageQueueId_t queue_macInt_id;
 	queue_macInt_id = osMessageQueueNew(4,sizeof(struct queueMsg_t),&queue_macInt_attr);
+	//-------------------------------------------------------------------------------------
 	//Declacration
 	struct queueMsg_t queueMsgR;					// queue message recive
 	struct queueMsg_t queueMsgS;					// queue message send
@@ -23,15 +25,23 @@ void MacSender(void *argument)
 	const uint8_t NbErrorACKMAX=10;				//nombre of resend ack error MAX
 	uint8_t NbErrorACK =0;								//nombre of resend ack error 
 	bool first = true;
-	//initalisation
+	//initalisation de la liste d'affichage
 	queueMsgS.type=TOKEN_LIST;
 	osMessageQueuePut(queue_lcd_id,&queueMsgS,osPriorityNormal,0);
 	for (;;)														  // loop until doomsday
 	{
-		//wait a Message
+		//-------------------------------------------------------------------------------------
+		// wait a message queue
+		//-------------------------------------------------------------------------------------
 		osMessageQueueGet(queue_macS_id,&queueMsgR,NULL,osWaitForever);
+		//-------------------------------------------------------------------------------------
+		// Check while case you are recive :
+		//-------------------------------------------------------------------------------------
 		switch(queueMsgR.type)
 		{
+			//-------------------------------------------------------------------------------------
+			//* New_TOKEN : creat and send a token in the circuit
+			//-------------------------------------------------------------------------------------
 			case NEW_TOKEN:
 				queueMsgS.type = TO_PHY;
 				dataStrct = osMemoryPoolAlloc(memPool,0);
@@ -57,6 +67,14 @@ void MacSender(void *argument)
 				osMemoryPoolFree(memPool,queueMsgS.anyPtr);
 				}
 				break;
+			//-------------------------------------------------------------------------------------
+			//* TOKEN : 
+			//	1) Ckeck if the token list change. if true update the local list and the lcd 
+			//	2) Update my state in the token 
+			//	3) Check if a message to send 
+			//     if true  : send the message
+			//     if false : send the token
+			//-------------------------------------------------------------------------------------
 			case TOKEN:
 			//chose data
 			queueMsgT.anyPtr=queueMsgR.anyPtr;
@@ -133,6 +151,16 @@ void MacSender(void *argument)
 					osMemoryPoolFree(memPool,queueMsgT.anyPtr);
 				}
 				break;
+			//-------------------------------------------------------------------------------------
+			//* DATABACK :
+			//	check the read bit
+			//  	If true  : ckeck the ACK bit
+			//    	If true  : send the token
+			//			If false : Check the NbErrorACK < NbErrorACKMAX
+			//				If true  : resend message and Increment NbErrorACK
+			//				If false : Indicate Error ACK in lcd and send token
+			//		If false : Indicate Error station  not found and send token
+			//-------------------------------------------------------------------------------------
 			case DATABACK:
 				//check the read bit
 				dataStrct = queueMsgR.anyPtr;
@@ -234,12 +262,21 @@ void MacSender(void *argument)
 				//Delete the recive
 				osMemoryPoolFree(memPool,queueMsgR.anyPtr);
 				break;
+			//-------------------------------------------------------------------------------------
+			//* START : connect the chat in the Interface 
+			//-------------------------------------------------------------------------------------
 			case START :
 				gTokenInterface.connected=true;
 				break;
+			//-------------------------------------------------------------------------------------
+			//* STOP : disconnect the chat in the Interface
+			//-------------------------------------------------------------------------------------
 			case STOP:
 				gTokenInterface.connected=false;
 				break;
+			//-------------------------------------------------------------------------------------
+			// * DATA_IND : Creat the message for the send and stoque in the internal queue
+			//-------------------------------------------------------------------------------------
 			case DATA_IND:
 				//creat the message to save
 				queueMsgS.type = TO_PHY;

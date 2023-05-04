@@ -16,14 +16,25 @@ void MacReceiver(void *argument)
 	dataFram	*dataI;											//dataI Indic
 	for (;;)															// loop until doomsday
 	{
-		//Recive a message 
+		//-------------------------------------------------------------------------------------
+		// wait a message queue
+		//-------------------------------------------------------------------------------------
 		osMessageQueueGet(queue_macR_id,&queueMsgR,NULL,osWaitForever);
-		//check type
+		//-------------------------------------------------------------------------------------
+		// Check while case you are recive :
+		//-------------------------------------------------------------------------------------
 		switch(queueMsgR.type)
 		{
+			//-------------------------------------------------------------------------------------
+			//* FROM_PHY : Annalise the message recive
+			//-------------------------------------------------------------------------------------
 			case FROM_PHY:
 			dataR=queueMsgR.anyPtr;
-			//check if is a token
+				//-------------------------------------------------------------------------------------
+				//	CHECK if the message is a token
+				//		If true  : send the token to sender
+				//		If false :  Annalise the Source and Destination
+				//-------------------------------------------------------------------------------------
 				if(dataR->token.addressToken==TOKEN_TAG)
 				{
 					//send token of sender
@@ -38,7 +49,15 @@ void MacReceiver(void *argument)
 				}
 				else
 				{
-					//check if Fiel Source is my 
+					//-------------------------------------------------------------------------------------
+					//	CHECK if the Source is my
+					//		If true  : Check if the destination is my or broadcast
+					//			If true  :  Check the CHECKSUM
+					//				If true  : make the READ and ACK TRUE and send Indication to Chat or Time 
+					//				If false : make the READ true and ACK false 
+					//			After send the message to the sender
+					//		If false : Next comment
+					//-------------------------------------------------------------------------------------
 					if(dataR->fram.contolFram.source>>3==gTokenInterface.myAddress)
 					{
 						//check auto message
@@ -104,6 +123,14 @@ void MacReceiver(void *argument)
 					}
 					else
 					{
+						//-------------------------------------------------------------------------------------
+						//	Check if the destination is my or broadcast
+						//		If true  :  Check the CHECKSUM
+						//			If true  : make the READ and ACK TRUE and send Indication to Chat or Time 
+						//			If false : make the READ true and ACK false 
+						//		After send the message to_Phy
+						//		If false : resende the message to_Phy
+						//-------------------------------------------------------------------------------------
 						//check if a message for my or all
 						if((dataR->fram.contolFram.destination>>3==gTokenInterface.myAddress||dataR->fram.contolFram.destination>>3==BROADCAST_ADDRESS))
 						{
